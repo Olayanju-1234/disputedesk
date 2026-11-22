@@ -54,24 +54,12 @@ interface TransitionsResponse {
   transitions: TransitionOption[];
 }
 
-interface PriorityResponse {
-  values?: Array<{ name: string }>;
+interface EditMetaResponse {
+  fields?: { priority?: { allowedValues?: Array<{ name: string }> } };
 }
 
 // JSM shows API comments to the customer unless they are marked internal.
 const INTERNAL_COMMENT = [{ key: 'sd.public.comment', value: { internal: true } }];
-
-let priorityNames: Promise<string[]> | null = null;
-
-function sitePriorities(): Promise<string[]> {
-  priorityNames ??= jira<PriorityResponse>('GET', route`/rest/api/3/priority/search?maxResults=50`)
-    .then((res) => (res.values ?? []).map((p) => p.name))
-    .catch((err: unknown) => {
-      priorityNames = null;
-      throw err;
-    });
-  return priorityNames;
-}
 
 function createFields(issue: NewIssue, withDueDate: boolean) {
   return {
@@ -82,6 +70,12 @@ function createFields(issue: NewIssue, withDueDate: boolean) {
     labels: issue.labels,
     ...(withDueDate && issue.dueDate ? { duedate: issue.dueDate } : {}),
   };
+}
+
+/** Priorities this issue's edit screen allows; empty when priority isn't editable there. */
+async function editablePriorities(issueKey: string): Promise<string[]> {
+  const meta = await jira<EditMetaResponse>('GET', route`/rest/api/3/issue/${issueKey}/editmeta`);
+  return (meta.fields?.priority?.allowedValues ?? []).map((p) => p.name);
 }
 
 export const forgeJira: JiraGateway = {
@@ -122,13 +116,22 @@ export const forgeJira: JiraGateway = {
     const fields: Record<string, unknown> = {};
     if (update.dueDate !== undefined) fields.duedate = update.dueDate;
     if (update.priority) {
-      const name = pickPriority(await sitePriorities(), update.priority);
-      if (name) fields.priority = { name };
+      const name = pickPriority(await editablePriorities(issueKey), update.priority);
+      if (!name) throw new Error('Priority is not editable on this issue');
+      fields.priority = { name };
     }
     const body: Record<string, unknown> = { fields };
     if (update.addLabels?.length)
       body.update = { labels: update.addLabels.map((add) => ({ add })) };
-    await jira('PUT', route`/rest/api/3/issue/${issueKey}`, body);
+    try {
+      await jira('PUT', route`/rest/api/3/issue/${issueKey}`, body);
+    } catch (err) {
+      log.warn('jira.update_failed', {
+        issueKey,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
   },
 
   async transition(issueKey: string, targetNames: string[]) {
