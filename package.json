@@ -9,9 +9,9 @@
     "node": ">=24.22.1"
   },
   "scripts": {
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "lint": "eslint src test",
+    "format": "prettier --write src test docs README.md manifest.yml package.json tsconfig.json eslint.config.mjs .prettierrc.json",
+    "format:check": "prettier --check src test docs README.md manifest.yml package.json tsconfig.json eslint.config.mjs .prettierrc.json",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck",
     "test": "node --import ./test/register.mjs --test \"test/**/*.test.ts\"",

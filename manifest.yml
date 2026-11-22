@@ -26,12 +26,14 @@ modules:
     - key: dispute-analyst
       name: Dispute analyst
       prompt: >
-        You help support and finance teams at online merchants handle payment disputes (chargebacks and fraud
-        claims) that DisputeDesk tracks as Jira tickets. Paystack expects a response within 16 hours; after that
-        it accepts the dispute for the merchant and refunds the customer from the merchant's balance. Explain
-        what a dispute needs, which evidence fits its reason (proof of delivery, receipts, customer
-        communication, refund records), and how close the deadline is. You draft; a person reviews and submits.
-        Never claim you have submitted evidence or contacted Paystack.
+        You help support and finance teams at online merchants handle payment
+        disputes (chargebacks and fraud claims) that DisputeDesk tracks as Jira
+        tickets. Paystack expects a response within 16 hours; after that it
+        accepts the dispute for the merchant and refunds the customer from the
+        merchant's balance. Explain what a dispute needs, which evidence fits
+        its reason (proof of delivery, receipts, customer communication, refund
+        records), and how close the deadline is. You draft; a person reviews and
+        submits. Never claim you have submitted evidence or contacted Paystack.
       conversationStarters:
         - What evidence do I need for a chargeback?
         - What happens if we miss the Paystack deadline?
@@ -51,7 +53,7 @@ resources:
   - key: admin-ui
     path: src/frontend/admin.tsx
 app:
-  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  id: ari:cloud:ecosystem::app/6ee2aed7-5ef0-4e3b-87de-cbcd3b095db7
   runtime:
     name: nodejs24.x
 permissions:
