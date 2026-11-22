@@ -1,0 +1,51 @@
+modules:
+  webtrigger:
+    - key: paystack-webhook
+      function: webhook-fn
+      response:
+        type: dynamic
+  consumer:
+    - key: dispute-events-consumer
+      queue: dispute-events
+      resolver:
+        function: consume-fn
+        method: dispute-event
+  scheduledTrigger:
+    - key: deadline-sweep
+      function: sweep-fn
+      interval: fiveMinute
+  jira:adminPage:
+    - key: disputedesk-admin
+      title: DisputeDesk
+      resource: admin-ui
+      resolver:
+        function: admin-fn
+      render: native
+      useAsConfig: true
+  function:
+    - key: webhook-fn
+      handler: index.webhook
+    - key: consume-fn
+      handler: index.consume
+      timeoutSeconds: 120
+    - key: sweep-fn
+      handler: index.sweep
+      timeoutSeconds: 120
+    - key: admin-fn
+      handler: index.adminResolver
+resources:
+  - key: admin-ui
+    path: src/frontend/admin.tsx
+app:
+  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  runtime:
+    name: nodejs24.x
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - storage:app
+  external:
+    fetch:
+      backend:
+        - https://*.hello.atlassian-dev.net
