@@ -51,9 +51,21 @@ forge deploy
 forge install --product jira
 ```
 
-Then open Jira settings, Apps, DisputeDesk: pick the project, save your Paystack secret key (and the webhook
-signing secret if your dashboard shows one), and paste the webhook URL into the Paystack dashboard under
-Settings, API Keys and Webhooks.
+### Set up the service project
+
+1. Create a Jira Service Management space for disputes. The "Finance service management" template works well.
+2. Add a request type called **Dispute**, and add the **Description** and **Due date** fields to it.
+3. In the Dispute workflow, add two statuses in the Done category, **Won** and **Lost**, each with "Allow
+   transitions from any status". DisputeDesk moves the ticket there when Paystack resolves the dispute. If
+   neither exists it uses any transition into a Done status, and leaves the ticket where it is if there is none.
+
+### Configure the app
+
+Open the app's Configure page (Manage apps, DisputeDesk, Configure). Pick the project and the Dispute issue
+type, save your Paystack secret key (and the webhook signing secret if your dashboard shows one), and paste the
+webhook URL into the Paystack dashboard under Settings, API Keys and Webhooks.
+
+Comments from DisputeDesk are internal notes, so customers on the portal never see them.
 
 ## Try it without a Paystack account
 
