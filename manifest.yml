@@ -62,4 +62,6 @@ permissions:
   external:
     fetch:
       backend:
-        - https://*.hello.atlassian-dev.net
+        # The admin simulator posts a signed test event to the app's own web trigger URL.
+        - address: https://*.hello.atlassian-dev.net
+          inScopeEUD: false
