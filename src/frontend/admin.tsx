@@ -65,6 +65,14 @@ interface SimResult {
 
 type Option = { label: string; value: string };
 
+const DEADLINES: Option[] = [
+  { label: '16 hours (Paystack default)', value: '16' },
+  { label: '7 hours (inside the 8 h warning)', value: '7' },
+  { label: '3.5 hours (inside the 4 h warning)', value: '3.5' },
+  { label: '45 minutes (inside the 1 h warning)', value: '0.75' },
+  { label: 'Already overdue by 15 minutes', value: '-0.25' },
+];
+
 const SCENARIOS: Option[] = [
   { label: 'New dispute', value: 'create' },
   { label: 'Paystack reminder', value: 'remind' },
@@ -303,12 +311,12 @@ function App() {
           />
           {scenario.value === 'create' && (
             <>
-              <Label labelFor="hours">Hours until the response deadline (Paystack gives 16)</Label>
-              <Textfield
-                id="hours"
-                type="number"
-                value={hoursUntilDue}
-                onChange={(e) => setHoursUntilDue(textValue(e))}
+              <Label labelFor="hours">Time left to respond</Label>
+              <Select
+                inputId="hours"
+                options={DEADLINES}
+                value={DEADLINES.find((o) => o.value === hoursUntilDue)}
+                onChange={(option: Option) => setHoursUntilDue(option.value)}
               />
             </>
           )}

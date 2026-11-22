@@ -1,4 +1,5 @@
 import type { AdfDoc } from './adf';
+import type { JiraPriority } from './deadline';
 import type { DisputeEvent, DisputeRecord } from './dispute';
 import type { SignatureScheme } from './signature';
 
@@ -55,7 +56,8 @@ export interface NewIssue {
 export interface IssueFieldUpdate {
   dueDate?: string | null;
   addLabels?: string[];
-  priority?: string;
+  /** Urgency level; the Jira adapter maps it onto the site's own priority names. */
+  priority?: JiraPriority;
 }
 
 export interface JiraGateway {

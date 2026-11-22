@@ -7,9 +7,7 @@ modules:
   consumer:
     - key: dispute-events-consumer
       queue: dispute-events
-      resolver:
-        function: consume-fn
-        method: dispute-event
+      function: consume-fn
   scheduledTrigger:
     - key: deadline-sweep
       function: sweep-fn

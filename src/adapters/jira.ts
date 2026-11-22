@@ -1,5 +1,6 @@
 import { asApp, route } from '@forge/api';
 import type { AdfDoc } from '../domain/adf';
+import { pickPriority, pickTransition, type TransitionOption } from '../domain/jira-choices';
 import {
   PermanentError,
   type IssueFieldUpdate,
@@ -50,7 +51,26 @@ interface SearchResponse {
 }
 
 interface TransitionsResponse {
-  transitions: Array<{ id: string; name: string; to?: { name?: string } }>;
+  transitions: TransitionOption[];
+}
+
+interface PriorityResponse {
+  values?: Array<{ name: string }>;
+}
+
+// JSM shows API comments to the customer unless they are marked internal.
+const INTERNAL_COMMENT = [{ key: 'sd.public.comment', value: { internal: true } }];
+
+let priorityNames: Promise<string[]> | null = null;
+
+function sitePriorities(): Promise<string[]> {
+  priorityNames ??= jira<PriorityResponse>('GET', route`/rest/api/3/priority/search?maxResults=50`)
+    .then((res) => (res.values ?? []).map((p) => p.name))
+    .catch((err: unknown) => {
+      priorityNames = null;
+      throw err;
+    });
+  return priorityNames;
 }
 
 function createFields(issue: NewIssue, withDueDate: boolean) {
@@ -92,13 +112,19 @@ export const forgeJira: JiraGateway = {
   },
 
   async addComment(issueKey: string, body: AdfDoc) {
-    await jira('POST', route`/rest/api/3/issue/${issueKey}/comment`, { body });
+    await jira('POST', route`/rest/api/3/issue/${issueKey}/comment`, {
+      body,
+      properties: INTERNAL_COMMENT,
+    });
   },
 
   async updateFields(issueKey: string, update: IssueFieldUpdate) {
     const fields: Record<string, unknown> = {};
     if (update.dueDate !== undefined) fields.duedate = update.dueDate;
-    if (update.priority) fields.priority = { name: update.priority };
+    if (update.priority) {
+      const name = pickPriority(await sitePriorities(), update.priority);
+      if (name) fields.priority = { name };
+    }
     const body: Record<string, unknown> = { fields };
     if (update.addLabels?.length)
       body.update = { labels: update.addLabels.map((add) => ({ add })) };
@@ -110,21 +136,16 @@ export const forgeJira: JiraGateway = {
       'GET',
       route`/rest/api/3/issue/${issueKey}/transitions`,
     );
-    const wanted = targetNames.map((n) => n.toLowerCase());
-    for (const target of wanted) {
-      const match = transitions.find(
-        (t) => t.name.toLowerCase() === target || t.to?.name?.toLowerCase() === target,
-      );
-      if (match) {
-        await jira('POST', route`/rest/api/3/issue/${issueKey}/transitions`, {
-          transition: { id: match.id },
-        });
-        return match.name;
-      }
+    const match = pickTransition(transitions, targetNames);
+    if (match) {
+      await jira('POST', route`/rest/api/3/issue/${issueKey}/transitions`, {
+        transition: { id: match.id },
+      });
+      return match.name;
     }
     log.warn('jira.transition.none_matched', {
       issueKey,
-      wanted,
+      wanted: targetNames,
       available: transitions.map((t) => t.name),
     });
     return null;

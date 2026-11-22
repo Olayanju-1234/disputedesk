@@ -1,6 +1,5 @@
 import type { WebTriggerRequest, WebTriggerResponse } from '@forge/api';
-import { InvocationError, InvocationErrorCode } from '@forge/events';
-import Resolver from '@forge/resolver';
+import { InvocationError, InvocationErrorCode, type AsyncEvent } from '@forge/events';
 import { forgeJira } from './adapters/jira';
 import { kvsStore } from './adapters/kvs-store';
 import { log } from './adapters/log';
@@ -12,6 +11,8 @@ import { consumeDispute } from './handlers/consumer';
 import { handlePaystackWebhook } from './handlers/webhook';
 
 export { adminResolver } from './handlers/admin';
+
+type Body = Record<string, unknown>;
 
 const processDeps: ProcessDeps = {
   store: kvsStore,
@@ -29,20 +30,12 @@ export function webhook(request: WebTriggerRequest): Promise<WebTriggerResponse>
   });
 }
 
-interface ConsumerContext {
-  eventId?: string;
-  jobId?: string;
-  retryContext?: { retryCount?: number };
-}
-
-const consumerResolver = new Resolver();
-consumerResolver.define('dispute-event', async ({ payload, context }) => {
-  const ctx = context as ConsumerContext;
-  const message = payload as unknown as QueuedDispute;
+export async function consume(event: AsyncEvent<Body>): Promise<InvocationError | undefined> {
+  const message = event.body as unknown as QueuedDispute;
   const delivery = {
     body: message,
-    eventId: ctx.eventId ?? `${ctx.jobId ?? 'job'}-${message.event?.dedupeKey ?? Date.now()}`,
-    retryCount: ctx.retryContext?.retryCount ?? 0,
+    eventId: event.eventId,
+    retryCount: event.retryContext?.retryCount ?? 0,
   };
   const result = await consumeDispute(delivery, processDeps);
   log.info('consumer.result', {
@@ -57,8 +50,7 @@ consumerResolver.define('dispute-event', async ({ payload, context }) => {
     });
   }
   return undefined;
-});
-export const consume = consumerResolver.getDefinitions();
+}
 
 export async function sweep(): Promise<void> {
   const result = await sweepDeadlines({ store: kvsStore, jira: forgeJira, now: () => new Date() });
