@@ -32,6 +32,13 @@ modules:
         entityPropertyExists:
           entity: issue
           propertyKey: disputedesk
+  jira:globalPage:
+    - key: disputedesk-dashboard
+      title: DisputeDesk
+      resource: dashboard-ui
+      resolver:
+        function: dashboard-fn
+      render: native
   rovo:agent:
     - key: dispute-analyst
       name: Dispute analyst
@@ -61,11 +68,15 @@ modules:
       handler: index.adminResolver
     - key: issue-panel-fn
       handler: index.issuePanelResolver
+    - key: dashboard-fn
+      handler: index.dashboardResolver
 resources:
   - key: admin-ui
     path: src/frontend/admin.tsx
   - key: issue-panel-ui
     path: src/frontend/issue-panel.tsx
+  - key: dashboard-ui
+    path: src/frontend/dashboard.tsx
 app:
   id: ari:cloud:ecosystem::app/6ee2aed7-5ef0-4e3b-87de-cbcd3b095db7
   runtime:

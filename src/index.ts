@@ -12,6 +12,7 @@ import { handlePaystackWebhook } from './handlers/webhook';
 
 export { adminResolver } from './handlers/admin';
 export { issuePanelResolver } from './handlers/issue-panel';
+export { dashboardResolver } from './handlers/dashboard';
 
 type Body = Record<string, unknown>;
 

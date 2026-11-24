@@ -2,8 +2,8 @@ import { asApp, fetch, route, webTrigger } from '@forge/api';
 import { kvs } from '@forge/kvs';
 import Resolver from '@forge/resolver';
 import { kvsStore } from '../adapters/kvs-store';
+import { MissingDeadLetterError, replayDeadLetter } from './dead-letters';
 import { log } from '../adapters/log';
-import { enqueueDispute } from '../adapters/queue';
 import {
   getConfig,
   getPaystackSecrets,
@@ -182,25 +182,14 @@ async function recentDisputes() {
     }));
 }
 
-async function replayDeadLetter(id: string) {
-  const entry = await kvsStore.getDeadLetter(id);
-  if (!entry) throw new UserError('That dead letter no longer exists.');
-  await enqueueDispute({
-    ...entry.message,
-    source: 'replay',
-    receivedAt: new Date().toISOString(),
-  });
-  await kvsStore.deleteDeadLetter(id);
-  return { replayed: id };
-}
-
 function guarded<T>(fn: (payload: Record<string, unknown>) => Promise<T>) {
   return async ({ payload }: { payload: unknown }) => {
     try {
       return { ok: true as const, data: await fn(asRecord(payload)) };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (!(err instanceof UserError)) log.error('admin.resolver_failed', { error: message });
+      if (!(err instanceof UserError || err instanceof MissingDeadLetterError))
+        log.error('admin.resolver_failed', { error: message });
       return { ok: false as const, error: message };
     }
   };
