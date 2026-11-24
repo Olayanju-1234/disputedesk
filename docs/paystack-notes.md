@@ -27,6 +27,18 @@ Read from paystack.com/docs on 22 Nov 2026.
   `archived` in API samples).
 - Resolutions seen: `merchant-accepted`, `declined`, `auto-accepted` (deadline lapsed).
 - Categories: `chargeback`, `fraud`.
-- Evidence and resolve endpoints (week 2): `GET /dispute/:id/upload_url` (signed URL valid 30 minutes, jpg, jpeg
-  or pdf), `POST /dispute/:id/evidence` for fraud claims, `PUT /dispute/:id/resolve` with `merchant-accepted` or
-  `declined`; declining needs the uploaded file name.
+
+## Dispute API (read 24 Nov 2026)
+
+Base `https://api.paystack.co`, header `Authorization: Bearer <secret key>`.
+
+- `POST /dispute/:id/evidence` (fraud claims): `customer_email`, `customer_name`, `customer_phone`,
+  `service_details`, optional `delivery_address`, optional `delivery_date` (YYYY-MM-DD). Response `data.id` is
+  the evidence id.
+- `GET /dispute/:id/upload_url?upload_filename=<name.ext>`: response `data.signedUrl` and `data.fileName`.
+  The signed URL is on `s3.eu-west-1.amazonaws.com`, valid 30 minutes; upload with a `PUT` of the file bytes.
+  Accepted files: .pdf, .jpg, .jpeg.
+- `PUT /dispute/:id/resolve`: `resolution` (`merchant-accepted` or `declined`), `message`, `refund_amount`
+  (subunit), `uploaded_filename` (the `fileName` from the upload URL call), optional `evidence` (evidence id).
+  The guide says declining needs the uploaded file. The docs list `refund_amount` without "optional"; for a
+  decline DisputeDesk sends 0. Not yet confirmed against a real dispute.

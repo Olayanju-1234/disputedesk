@@ -30,7 +30,8 @@ export interface DisputeEvent {
   snapshot: DisputeSnapshot;
 }
 
-export type TimelineKind = DisputeEventKind | 'stale-ignored' | 'deadline-alert' | 'ticket-created';
+export type TimelineKind =
+  DisputeEventKind | 'stale-ignored' | 'deadline-alert' | 'ticket-created' | 'response';
 
 export interface TimelineEntry {
   at: string;

@@ -13,6 +13,7 @@ import {
   type EvidenceItem,
   type EvidenceState,
 } from './evidence';
+import { canRespond, describeResponse, isSimulated, type ResponseRecord } from './response';
 
 export interface PanelTimelineRow {
   at: string;
@@ -32,6 +33,13 @@ export interface DisputePanel {
   dueAt: string | null;
   evidence: { items: EvidenceItem[]; state: EvidenceState; done: number; total: number };
   timeline: PanelTimelineRow[];
+  category: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  simulated: boolean;
+  response: ResponseRecord | null;
+  responseSummary: string | null;
+  canRespond: boolean;
 }
 
 const PANEL_TIMELINE_LIMIT = 8;
@@ -50,12 +58,18 @@ export function timelineLabel(entry: TimelineEntry): string {
       return `Deadline warning sent (${entry.note ?? 'threshold'})`;
     case 'stale-ignored':
       return 'Ignored an older update that arrived late';
+    case 'response':
+      return `${entry.note === 'accept' ? 'Accepted the dispute' : 'Contested with evidence'} (${entry.status})`;
     default:
       return entry.kind;
   }
 }
 
-export function buildPanel(record: DisputeRecord, evidenceState: EvidenceState): DisputePanel {
+export function buildPanel(
+  record: DisputeRecord,
+  evidenceState: EvidenceState,
+  response?: ResponseRecord,
+): DisputePanel {
   const s = record.snapshot;
   const reason = classifyReason(s);
   const items = evidenceChecklist(reason);
@@ -72,6 +86,13 @@ export function buildPanel(record: DisputeRecord, evidenceState: EvidenceState):
     reasonLabel: REASON_LABELS[reason],
     dueAt: s.dueAt,
     evidence: { items, state: evidenceState, ...progress },
+    category: s.category,
+    customerName: s.customerName,
+    customerEmail: s.customerEmail,
+    simulated: isSimulated(s),
+    response: response ?? null,
+    responseSummary: response ? describeResponse(response) : null,
+    canRespond: canRespond(s, response),
     timeline: [...record.timeline]
       .reverse()
       .slice(0, PANEL_TIMELINE_LIMIT)

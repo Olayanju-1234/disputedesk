@@ -177,3 +177,29 @@ export async function readDisputeProperty(issueKey: string): Promise<DisputeProp
     throw err;
   }
 }
+
+export interface IssueAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
+export async function listAttachments(issueKey: string): Promise<IssueAttachment[]> {
+  const res = await jira<{ fields?: { attachment?: Array<Record<string, unknown>> } }>(
+    'GET',
+    route`/rest/api/3/issue/${issueKey}?fields=attachment`,
+  );
+  return (res.fields?.attachment ?? []).map((a) => ({
+    id: String(a.id),
+    filename: typeof a.filename === 'string' ? a.filename : 'attachment',
+    mimeType: typeof a.mimeType === 'string' ? a.mimeType : 'application/octet-stream',
+    size: typeof a.size === 'number' ? a.size : 0,
+  }));
+}
+
+export async function downloadAttachmentContent(id: string): Promise<Uint8Array> {
+  const res = await asApp().requestJira(route`/rest/api/3/attachment/content/${id}?redirect=false`);
+  if (!res.ok) throw new Error(`Could not download attachment ${id} (${res.status})`);
+  return new Uint8Array(await res.arrayBuffer());
+}

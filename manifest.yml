@@ -81,3 +81,8 @@ permissions:
         # The admin simulator posts a signed test event to the app's own web trigger URL.
         - address: https://*.hello.atlassian-dev.net
           inScopeEUD: false
+        # Paystack Dispute API, and the S3 signed URLs it returns for evidence uploads.
+        - address: https://api.paystack.co
+          inScopeEUD: true
+        - address: https://s3.eu-west-1.amazonaws.com
+          inScopeEUD: true
