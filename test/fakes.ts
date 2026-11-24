@@ -1,5 +1,6 @@
 import type { AdfDoc } from '../src/domain/adf';
 import type { DisputeRecord } from '../src/domain/dispute';
+import type { DisputeProperty } from '../src/domain/issue-content';
 import type {
   AppConfig,
   DeadLetter,
@@ -48,6 +49,7 @@ export type JiraCall =
 export class FakeJira implements JiraGateway {
   readonly calls: JiraCall[] = [];
   readonly labelled = new Map<string, IssueRef>();
+  readonly properties = new Map<string, DisputeProperty>();
   failNext: Partial<Record<JiraCall['op'], Error>> = {};
   private seq = 0;
 
@@ -78,6 +80,10 @@ export class FakeJira implements JiraGateway {
   updateFields(issueKey: string, update: IssueFieldUpdate) {
     this.maybeFail('update');
     this.calls.push({ op: 'update', issueKey, update });
+    return Promise.resolve();
+  }
+  setDisputeProperty(issueKey: string, value: DisputeProperty) {
+    this.properties.set(issueKey, structuredClone(value));
     return Promise.resolve();
   }
   transition(issueKey: string, targets: string[]) {

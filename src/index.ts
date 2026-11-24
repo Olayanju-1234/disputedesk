@@ -11,6 +11,7 @@ import { consumeDispute } from './handlers/consumer';
 import { handlePaystackWebhook } from './handlers/webhook';
 
 export { adminResolver } from './handlers/admin';
+export { issuePanelResolver } from './handlers/issue-panel';
 
 type Body = Record<string, unknown>;
 

@@ -20,6 +20,18 @@ modules:
         function: admin-fn
       render: native
       useAsConfig: true
+  jira:issueContext:
+    - key: dispute-context
+      title: DisputeDesk
+      label: Dispute deadline and evidence
+      resource: issue-panel-ui
+      resolver:
+        function: issue-panel-fn
+      render: native
+      displayConditions:
+        entityPropertyExists:
+          entity: issue
+          propertyKey: disputedesk
   rovo:agent:
     - key: dispute-analyst
       name: Dispute analyst
@@ -47,9 +59,13 @@ modules:
       timeoutSeconds: 120
     - key: admin-fn
       handler: index.adminResolver
+    - key: issue-panel-fn
+      handler: index.issuePanelResolver
 resources:
   - key: admin-ui
     path: src/frontend/admin.tsx
+  - key: issue-panel-ui
+    path: src/frontend/issue-panel.tsx
 app:
   id: ari:cloud:ecosystem::app/6ee2aed7-5ef0-4e3b-87de-cbcd3b095db7
   runtime:

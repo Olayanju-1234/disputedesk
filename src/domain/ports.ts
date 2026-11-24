@@ -1,6 +1,7 @@
 import type { AdfDoc } from './adf';
 import type { JiraPriority } from './deadline';
 import type { DisputeEvent, DisputeRecord } from './dispute';
+import type { DisputeProperty } from './issue-content';
 import type { SignatureScheme } from './signature';
 
 export interface AppConfig {
@@ -65,6 +66,7 @@ export interface JiraGateway {
   createIssue(issue: NewIssue): Promise<IssueRef>;
   addComment(issueKey: string, body: AdfDoc): Promise<void>;
   updateFields(issueKey: string, update: IssueFieldUpdate): Promise<void>;
+  setDisputeProperty(issueKey: string, value: DisputeProperty): Promise<void>;
   /** Moves the issue through the first available transition whose name or target matches. */
   transition(issueKey: string, targetNames: string[]): Promise<string | null>;
 }

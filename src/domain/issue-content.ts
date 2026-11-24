@@ -1,6 +1,12 @@
 import { bulletList, code, doc, heading, panel, paragraph, strong, text, type AdfDoc } from './adf';
 import { describeTimeLeft, type DeadlineAlert } from './deadline';
-import { formatAmount, outcomeOf, type DisputeSnapshot } from './dispute';
+import {
+  formatAmount,
+  outcomeOf,
+  type DisputeRecord,
+  type DisputeSnapshot,
+  type Outcome,
+} from './dispute';
 
 export const APP_LABEL = 'disputedesk';
 
@@ -133,4 +139,34 @@ export function deadlineAlertComment(alert: DeadlineAlert, dueAt: string): AdfDo
       ? `Deadline passed (${left}). Paystack may already have accepted this dispute for you.`
       : `${left} to respond (deadline ${formatUtc(dueAt)}). Priority raised to ${alert.priority}.`;
   return doc(panel(alert.thresholdHours <= 1 ? 'error' : 'warning', paragraph(strong(lead))));
+}
+
+/** Issue property that marks a ticket as a dispute; the issue sidebar panel only shows where it exists. */
+export const DISPUTE_PROPERTY_KEY = 'disputedesk';
+
+export interface DisputeProperty {
+  disputeKey: string;
+  provider: string;
+  providerDisputeId: string;
+  status: string;
+  outcome: Outcome;
+  category: string;
+  amountMinor: number;
+  currency: string;
+  dueAt: string | null;
+}
+
+export function disputeProperty(record: DisputeRecord): DisputeProperty {
+  const s = record.snapshot;
+  return {
+    disputeKey: record.key,
+    provider: s.provider,
+    providerDisputeId: s.providerDisputeId,
+    status: s.status,
+    outcome: outcomeOf(s),
+    category: s.category,
+    amountMinor: s.amountMinor,
+    currency: s.currency,
+    dueAt: s.dueAt,
+  };
 }

@@ -1,5 +1,6 @@
 import { asApp, route } from '@forge/api';
 import type { AdfDoc } from '../domain/adf';
+import { DISPUTE_PROPERTY_KEY, type DisputeProperty } from '../domain/issue-content';
 import { pickPriority, pickTransition, type TransitionOption } from '../domain/jira-choices';
 import {
   PermanentError,
@@ -134,6 +135,14 @@ export const forgeJira: JiraGateway = {
     }
   },
 
+  async setDisputeProperty(issueKey: string, value: DisputeProperty) {
+    await jira(
+      'PUT',
+      route`/rest/api/3/issue/${issueKey}/properties/${DISPUTE_PROPERTY_KEY}`,
+      value,
+    );
+  },
+
   async transition(issueKey: string, targetNames: string[]) {
     const { transitions } = await jira<TransitionsResponse>(
       'GET',
@@ -154,3 +163,17 @@ export const forgeJira: JiraGateway = {
     return null;
   },
 };
+
+/** The dispute marker on an issue, or null when the issue isn't a DisputeDesk ticket. */
+export async function readDisputeProperty(issueKey: string): Promise<DisputeProperty | null> {
+  try {
+    const res = await jira<{ value?: DisputeProperty }>(
+      'GET',
+      route`/rest/api/3/issue/${issueKey}/properties/${DISPUTE_PROPERTY_KEY}`,
+    );
+    return res?.value ?? null;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('404')) return null;
+    throw err;
+  }
+}

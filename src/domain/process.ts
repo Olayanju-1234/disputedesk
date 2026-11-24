@@ -11,6 +11,7 @@ import {
   APP_LABEL,
   deadlineAlertComment,
   disputeLabel,
+  disputeProperty,
   dueDateChangeComment,
   issueDescription,
   issueSummary,
@@ -129,6 +130,7 @@ export async function processDisputeEvent(
       updatedAt: nowIso,
     };
     await deps.store.saveDispute(record);
+    await deps.jira.setDisputeProperty(issue.key, disputeProperty(record));
     await applyOutcome(issue.key, record, deps);
     await deps.store.markProcessed(event.dedupeKey);
     return 'created';
@@ -147,6 +149,7 @@ export async function processDisputeEvent(
   };
   // Save before side effects: a retry then sees no change and skips the comments instead of repeating them.
   await deps.store.saveDispute(record);
+  await deps.jira.setDisputeProperty(issueKey, disputeProperty(record));
 
   if (decision.action === 'update') {
     if (decision.statusChanged && !decision.outcomeChanged) {
