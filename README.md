@@ -82,17 +82,21 @@ Comments from DisputeDesk are internal notes, so customers on the portal never s
 ### Use the tools from an MCP client
 
 The tools are `list-open-disputes`, `get-dispute`, `find-policy-pages` and `save-evidence-draft`, served at
-`https://mcp.atlassian.com/forge/6ee2aed7-5ef0-4e3b-87de-cbcd3b095db7`. External access is off by default: a site
-admin turns the tools on in Atlassian Administration under Apps, Sites, the site, Connected apps, DisputeDesk.
-Then, for example in Claude Code:
+`https://mcp.atlassian.com/forge/6ee2aed7-5ef0-4e3b-87de-cbcd3b095db7`. To use them:
+
+1. A site admin turns them on in Atlassian Administration: Apps, Sites, the site, Connected apps, DisputeDesk,
+   then **Enable tools** under Tools.
+2. Each person opens the DisputeDesk admin or dispute page once and clicks **Allow access**, so the tools can read
+   Jira and Confluence as them.
+3. Connect a client, for example Claude Code:
 
 ```bash
 claude mcp add --transport http disputedesk https://mcp.atlassian.com/forge/6ee2aed7-5ef0-4e3b-87de-cbcd3b095db7
 claude mcp login disputedesk
 ```
 
-The sign-in lets you pick a site where the app is installed and its tools are turned on, and the tools then run
-with your own Jira and Confluence permissions.
+The sign-in lists sites where the app is installed and its tools are on. The tools then run with your own Jira and
+Confluence permissions.
 
 ## Try it without a Paystack account
 

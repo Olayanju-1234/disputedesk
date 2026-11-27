@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { cleanExcerpt, disputeText, openDisputesText, policyText } from '../src/domain/agent-text';
+import {
+  cleanExcerpt,
+  cleanSearchText,
+  disputeText,
+  openDisputesText,
+  policyText,
+} from '../src/domain/agent-text';
 import { buildDashboard } from '../src/domain/dashboard';
 import type { DisputeRecord } from '../src/domain/dispute';
 import { parsePaystackEvent } from '../src/domain/paystack';
@@ -88,5 +94,13 @@ describe('agent tool text', () => {
       cleanExcerpt('We @@@hl@@@refund@@@endhl@@@ <b>within</b>\n 7 days'),
       'We refund within 7 days',
     );
+  });
+
+  it('cleans Confluence titles, including HTML entities', () => {
+    assert.equal(
+      cleanSearchText('G&#39;day @@@hl@@@Team@@@endhl@@@ &amp; friends'),
+      "G'day Team & friends",
+    );
+    assert.equal(cleanSearchText('Caf&#xe9; &unknown; ok'), 'Café &unknown; ok');
   });
 });

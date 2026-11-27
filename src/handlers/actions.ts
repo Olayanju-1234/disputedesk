@@ -5,6 +5,7 @@ import { log } from '../adapters/log';
 import { doc, panel, paragraph, strong, text } from '../domain/adf';
 import {
   cleanExcerpt,
+  cleanSearchText,
   disputeText,
   openDisputesText,
   policyText,
@@ -147,7 +148,7 @@ export function findPolicyPagesAction(payload: Payload): Promise<string> {
     const body = (await res.json()) as ConfluenceSearch;
     const base = body._links?.base ?? '';
     const hits: PolicyHit[] = (body.results ?? []).map((r) => ({
-      title: r.title ?? r.content?.title ?? 'Untitled page',
+      title: cleanSearchText(r.title ?? r.content?.title ?? '', 150) || 'Untitled page',
       url: `${base}${r.url ?? ''}`,
       excerpt: cleanExcerpt(r.excerpt ?? ''),
     }));

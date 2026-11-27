@@ -136,6 +136,10 @@ function App() {
   }, []);
 
   useEffect(() => {
+    invoke('checkUserAccess').catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     void (async () => {
       try {
         const [loaded, projectList] = await Promise.all([

@@ -76,12 +76,30 @@ export function policyText(query: string, hits: PolicyHit[]): string {
   ].join('\n');
 }
 
-/** Confluence search excerpts carry highlight markers; strip them and collapse whitespace. */
-export function cleanExcerpt(raw: string): string {
-  return raw
-    .replace(/@@@(end)?hl@@@/g, '')
-    .replace(/<[^>]+>/g, '')
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
+
+function decodeEntities(raw: string): string {
+  return raw.replace(/&(#\d+|#x[0-9a-f]+|[a-z]+);/gi, (match, code: string) => {
+    if (code.startsWith('#x') || code.startsWith('#X'))
+      return String.fromCodePoint(parseInt(code.slice(2), 16));
+    if (code.startsWith('#')) return String.fromCodePoint(Number(code.slice(1)));
+    return ENTITIES[code.toLowerCase()] ?? match;
+  });
+}
+
+/** Confluence search titles and excerpts carry highlight markers and HTML; strip them. */
+export function cleanSearchText(raw: string, max = 300): string {
+  return decodeEntities(raw.replace(/@@@(end)?hl@@@/g, '').replace(/<[^>]+>/g, ''))
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 300);
+    .slice(0, max);
 }
+
+export const cleanExcerpt = (raw: string): string => cleanSearchText(raw, 300);
