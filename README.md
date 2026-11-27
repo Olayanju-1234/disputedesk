@@ -98,6 +98,11 @@ claude mcp login disputedesk
 The sign-in lists sites where the app is installed and its tools are on. The tools then run with your own Jira and
 Confluence permissions.
 
+For agents that load [Agent Skills](https://agentskills.io/specification), [skills/disputedesk/SKILL.md](skills/disputedesk/SKILL.md)
+teaches them how to use these tools: which tool answers what, the evidence that fits each dispute reason, and the
+rule that a person, not the agent, sends anything to Paystack. In Claude Code, copy the `skills/disputedesk` folder
+into `~/.claude/skills/`.
+
 ## Try it without a Paystack account
 
 Paystack does not document a way to raise disputes in test mode, so the admin page has a simulator. Save any
