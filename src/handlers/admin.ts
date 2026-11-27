@@ -1,4 +1,4 @@
-import { asApp, asUser, fetch, route, webTrigger } from '@forge/api';
+import { asApp, asUser, fetch, NeedsAuthenticationError, route, webTrigger } from '@forge/api';
 import { kvs } from '@forge/kvs';
 import Resolver from '@forge/resolver';
 import { kvsStore } from '../adapters/kvs-store';
@@ -229,11 +229,25 @@ resolver.define(
   guarded((p) => replayDeadLetter(stringField(p, 'id'))),
 );
 
-// Not wrapped in guarded(): a missing user grant must reach Forge so it can show the "Allow access" prompt.
-// The grant is what lets the agent's MCP tools read Jira and Confluence as this person.
-resolver.define('checkUserAccess', async () => {
+// The user grant lets the agent's MCP tools read Jira and Confluence as this person.
+// Checked without prompting, so a missing grant never hides the settings form.
+resolver.define(
+  'userAccessStatus',
+  guarded(async () => {
+    try {
+      const res = await asUser().requestJira(route`/rest/api/3/myself`);
+      return { granted: res.ok };
+    } catch (err) {
+      if (err instanceof NeedsAuthenticationError) return { granted: false };
+      throw err;
+    }
+  }),
+);
+
+// Not wrapped in guarded(): the error must reach Forge so it shows the "Allow access" prompt.
+resolver.define('requestUserAccess', async () => {
   const res = await asUser().requestJira(route`/rest/api/3/myself`);
-  return { ok: res.ok };
+  return { ok: true as const, data: { granted: res.ok } };
 });
 
 export const adminResolver = resolver.getDefinitions();

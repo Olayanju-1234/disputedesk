@@ -86,8 +86,8 @@ The tools are `list-open-disputes`, `get-dispute`, `find-policy-pages` and `save
 
 1. A site admin turns them on in Atlassian Administration: Apps, Sites, the site, Connected apps, DisputeDesk,
    then **Enable tools** under Tools.
-2. Each person opens the DisputeDesk admin or dispute page once and clicks **Allow access**, so the tools can read
-   Jira and Confluence as them.
+2. Each person clicks **Allow access for MCP tools** once, under "Rovo and MCP tools" on the DisputeDesk admin
+   page, so the tools can read Jira and Confluence as them.
 3. Connect a client, for example Claude Code:
 
 ```bash

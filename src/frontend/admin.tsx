@@ -125,6 +125,7 @@ function App() {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [lastSim, setLastSim] = useState<SimResult | null>(null);
+  const [userAccess, setUserAccess] = useState<boolean | null>(null);
 
   const refreshLists = useCallback(async () => {
     const [rows, dlq] = await Promise.all([
@@ -136,7 +137,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    invoke('checkUserAccess').catch(() => undefined);
+    call<{ granted: boolean }>('userAccessStatus')
+      .then((s) => setUserAccess(s.granted))
+      .catch(() => setUserAccess(false));
   }, []);
 
   useEffect(() => {
@@ -205,6 +208,12 @@ function App() {
             }
           : { tone: 'error', text: `Webhook answered ${result.status}: ${result.response}` },
       );
+    });
+
+  const allowAccess = () =>
+    run('access', async () => {
+      const s = await call<{ granted: boolean }>('requestUserAccess');
+      setUserAccess(s.granted);
     });
 
   const replay = (id: string) =>
@@ -342,6 +351,26 @@ function App() {
               webhook answered {lastSim.status}.
             </Text>
           )}
+        </Stack>
+      </Box>
+
+      <Box>
+        <Heading size="medium">3. Rovo and MCP tools</Heading>
+        <Stack space="space.100">
+          <Text>
+            The Dispute analyst's tools read Jira and Confluence as the person using them. Rovo asks
+            for nothing extra; MCP clients such as Claude need each person to allow access once.
+          </Text>
+          <Inline space="space.100" alignBlock="center">
+            <Lozenge appearance={userAccess ? 'success' : 'default'}>
+              {userAccess === null ? 'checking' : userAccess ? 'access allowed' : 'not allowed yet'}
+            </Lozenge>
+            {userAccess === false && (
+              <Button onClick={() => void allowAccess()} isDisabled={busy !== null}>
+                Allow access for MCP tools
+              </Button>
+            )}
+          </Inline>
         </Stack>
       </Box>
 
