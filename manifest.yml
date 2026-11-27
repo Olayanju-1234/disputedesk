@@ -42,19 +42,107 @@ modules:
   rovo:agent:
     - key: dispute-analyst
       name: Dispute analyst
-      prompt: >
-        You help support and finance teams at online merchants handle payment
-        disputes (chargebacks and fraud claims) that DisputeDesk tracks as Jira
-        tickets. Paystack expects a response within 16 hours; after that it
-        accepts the dispute for the merchant and refunds the customer from the
-        merchant's balance. Explain what a dispute needs, which evidence fits
-        its reason (proof of delivery, receipts, customer communication, refund
-        records), and how close the deadline is. You draft; a person reviews and
-        submits. Never claim you have submitted evidence or contacted Paystack.
+      prompt: |
+        You are the Dispute analyst for DisputeDesk, a Jira Service Management app that tracks Paystack
+        payment disputes (chargebacks and fraud claims) as tickets.
+
+        Facts you may state:
+        - Paystack expects a response to a dispute within 16 hours. If nobody responds before the deadline,
+          Paystack accepts the dispute on the merchant's behalf and refunds the customer from the merchant's
+          Paystack balance.
+        - To contest, the merchant uploads a receipt (PDF or JPEG) and declines the dispute. For fraud claims
+          Paystack also asks for the customer's name, email and phone, what was provided, and optionally the
+          delivery address and date.
+        Do not state any other Paystack rule, fee, time limit or outcome. If asked about something these facts
+        and your tool results don't cover, say you don't know and suggest Paystack's documentation or support.
+
+        How to work:
+        - Get facts about disputes only from your actions. Never guess an amount, deadline, customer, status
+          or outcome. Use list-open-disputes for an overview and get-dispute for one ticket.
+        - If the user is viewing a dispute ticket and doesn't name another, use that ticket.
+        - When the deadline is close, say how much time is left first.
+        - Before drafting evidence, call get-dispute, then find-policy-pages to look for the merchant's refund,
+          delivery or terms pages in Confluence. Quote only what those pages say, with the page title. If no
+          page is found, say so and leave a placeholder for the merchant to fill in.
+        - Evidence that fits each reason. Goods or service not received: proof of delivery with date and
+          address, the receipt, messages confirming delivery. Charge not recognised: order details and the
+          customer contact details used, to show they match the cardholder. Charged more than once: proof the
+          charges are separate orders, or the refund reference. Fraud claim: the customer's name, email and
+          phone, delivery details, what was provided, and earlier undisputed orders by the same customer.
+        - Show the draft to the user first. Save it with save-evidence-draft only after they agree.
+        - You never send anything to Paystack. A person reviews the draft and responds from the DisputeDesk
+          panel on the ticket. Never claim a response was sent.
+        - Keep answers short and plain.
       conversationStarters:
-        - What evidence do I need for a chargeback?
+        - Which disputes are closest to the deadline?
+        - Summarise this dispute and what evidence is missing
+        - Draft our response to this dispute
         - What happens if we miss the Paystack deadline?
-        - How should I answer a fraud claim?
+      actions:
+        - list-open-disputes
+        - get-dispute
+        - find-policy-pages
+        - save-evidence-draft
+  action:
+    - key: list-open-disputes
+      name: List open disputes
+      function: action-list-fn
+      actionVerb: GET
+      description: >
+        Lists open Paystack disputes tracked by DisputeDesk, most urgent deadline first, with amount, reason,
+        time left, evidence progress and response status.
+    - key: get-dispute
+      name: Get dispute details
+      function: action-get-fn
+      actionVerb: GET
+      description: >
+        Gets one DisputeDesk dispute by Jira issue key: deadline and time left, amount, reason, what the
+        customer said, evidence checklist, response status and recent events.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the dispute ticket, for example DIS-6. Leave empty to use the ticket being viewed.
+    - key: find-policy-pages
+      name: Find policy pages
+      function: action-policy-fn
+      actionVerb: GET
+      description: >
+        Searches Confluence for the merchant's own policy pages (refunds, delivery, terms) to support a dispute
+        response. Returns page titles, links and short excerpts.
+      inputs:
+        query:
+          title: Search words
+          type: string
+          required: true
+          description: What to search for, for example "refund policy" or "delivery times".
+    - key: save-evidence-draft
+      name: Save evidence draft
+      function: action-draft-fn
+      actionVerb: CREATE
+      description: >
+        Saves an evidence draft as an internal note on a dispute ticket for a person to review. Use only after
+        the user agrees to the draft. Never sends anything to Paystack.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: Jira issue key of the dispute ticket. Leave empty to use the ticket being viewed.
+        draft:
+          title: Draft
+          type: string
+          required: true
+          description: The evidence draft text the user agreed to.
+  rovo:mcp:
+    - key: disputedesk-mcp
+      name: DisputeDesk
+      tools:
+        - list-open-disputes
+        - get-dispute
+        - find-policy-pages
+        - save-evidence-draft
   function:
     - key: webhook-fn
       handler: index.webhook
@@ -70,6 +158,14 @@ modules:
       handler: index.issuePanelResolver
     - key: dashboard-fn
       handler: index.dashboardResolver
+    - key: action-list-fn
+      handler: index.listOpenDisputesAction
+    - key: action-get-fn
+      handler: index.getDisputeAction
+    - key: action-policy-fn
+      handler: index.findPolicyPagesAction
+    - key: action-draft-fn
+      handler: index.saveEvidenceDraftAction
 resources:
   - key: admin-ui
     path: src/frontend/admin.tsx
@@ -81,11 +177,19 @@ app:
   id: ari:cloud:ecosystem::app/6ee2aed7-5ef0-4e3b-87de-cbcd3b095db7
   runtime:
     name: nodejs24.x
+  # One installation covers Jira (required) and Confluence (optional, for policy page search).
+  compatibility:
+    jira:
+      required: true
+    confluence:
+      required: false
 permissions:
   scopes:
     - read:jira-work
     - write:jira-work
     - storage:app
+    - search:confluence
+    - read:confluence-content.summary
   external:
     fetch:
       backend:

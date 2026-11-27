@@ -9,12 +9,16 @@ won or lost when Paystack resolves the dispute.
 
 ## How it works
 
-| Part           | Forge module               | What it does                                                                                                                                 |
-| -------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Webhook intake | `webtrigger`               | Verifies the Paystack signature on the raw body (HMAC-SHA512, constant-time compare), answers fast, queues the event                         |
-| Processing     | `consumer` (async events)  | Skips duplicate deliveries, ignores out-of-order (stale) updates, creates or updates the ticket, retries with backoff, dead-letters failures |
-| Deadline sweep | `scheduledTrigger` (5 min) | Comments and raises priority at 8 h, 4 h and 1 h before the deadline, and once it has passed                                                 |
-| Admin page     | `jira:adminPage` (UI Kit)  | Project and secrets, the webhook URL, a signed test-dispute simulator, recent disputes, dead letters with Replay                             |
+| Part           | Forge module                 | What it does                                                                                                                                                           |
+| -------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webhook intake | `webtrigger`                 | Verifies the Paystack signature on the raw body (HMAC-SHA512, constant-time compare), answers fast, queues the event                                                   |
+| Processing     | `consumer` (async events)    | Skips duplicate deliveries, ignores out-of-order (stale) updates, creates or updates the ticket, retries with backoff, dead-letters failures                           |
+| Deadline sweep | `scheduledTrigger` (5 min)   | Comments and raises priority at 8 h, 4 h and 1 h before the deadline, and once it has passed                                                                           |
+| Admin page     | `jira:adminPage` (UI Kit)    | Project and secrets, the webhook URL, a signed test-dispute simulator, recent disputes, dead letters with Replay                                                       |
+| Dispute panel  | `jira:issueContext` (UI Kit) | On dispute tickets only: time left, reason, evidence checklist by reason, timeline, and Respond to Paystack (contest with a receipt attached to the ticket, or accept) |
+| Dashboard      | `jira:globalPage` (UI Kit)   | Open disputes by deadline, money at risk, win rate, recently resolved, failed events with Replay                                                                       |
+| Agent          | `rovo:agent` + `action`      | Dispute analyst: lists and explains disputes, searches Confluence policy pages, drafts evidence and saves it as an internal note only after the user agrees            |
+| MCP            | `rovo:mcp`                   | The same four tools for MCP clients such as Claude Desktop or Cursor, through the Atlassian MCP server                                                                 |
 
 Signature checks support both Paystack schemes:
 
@@ -24,6 +28,10 @@ Signature checks support both Paystack schemes:
 
 When a signing secret is configured, the timestamped header must pass; the app does not fall back to the
 legacy header, because that would let an old captured event skip the replay window.
+
+The agent and MCP tools read Jira and Confluence as the person asking (`asUser`), so they only see disputes and
+pages that person can already open. Nothing is ever sent to Paystack by the agent; responses go through the
+panel, with a confirm step.
 
 Each dispute is processed one event at a time (queue concurrency key per dispute), so two deliveries of the same
 event cannot both open a ticket. Paystack resends the same body on retry, so the dedupe key is the dispute id,
@@ -59,6 +67,10 @@ forge install --product jira
    transitions from any status". DisputeDesk moves the ticket there when Paystack resolves the dispute. If
    neither exists it uses any transition into a Done status, and leaves the ticket where it is if there is none.
 
+DisputeDesk installs once for Jira (required) and can also use Confluence on the same site (optional). Add
+Confluence to the installation to let the agent search policy pages; without it, everything else works and the
+agent says it can't search Confluence.
+
 ### Configure the app
 
 Open the app's Configure page (Manage apps, DisputeDesk, Configure). Pick the project and the Dispute issue
@@ -66,6 +78,12 @@ type, save your Paystack secret key (and the webhook signing secret if your dash
 webhook URL into the Paystack dashboard under Settings, API Keys and Webhooks.
 
 Comments from DisputeDesk are internal notes, so customers on the portal never see them.
+
+### Use the tools from an MCP client
+
+A site admin turns on the app's MCP server for the site; it is then reachable through the Atlassian MCP server
+(`https://mcp.atlassian.com`). The tools are `list-open-disputes`, `get-dispute`, `find-policy-pages` and
+`save-evidence-draft`.
 
 ## Try it without a Paystack account
 

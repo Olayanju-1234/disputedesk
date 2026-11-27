@@ -13,6 +13,12 @@ import { handlePaystackWebhook } from './handlers/webhook';
 export { adminResolver } from './handlers/admin';
 export { issuePanelResolver } from './handlers/issue-panel';
 export { dashboardResolver } from './handlers/dashboard';
+export {
+  findPolicyPagesAction,
+  getDisputeAction,
+  listOpenDisputesAction,
+  saveEvidenceDraftAction,
+} from './handlers/actions';
 
 type Body = Record<string, unknown>;
 
